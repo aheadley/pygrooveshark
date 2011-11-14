@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from urllib import quote_plus
 import urllib2
 import contextlib
 import re
@@ -116,16 +117,18 @@ class Stream(object):
     def __init__(self, ip, key):
         self._ip = ip
         self._key = key
-        request = urllib2.Request('http://%s/stream.php' % (self._ip), data='streamKey=%s' % (self._key),
+        self._request = urllib2.Request('http://%s/stream.php' % (self._ip), data='streamKey=%s' % (self._key),
                                   headers={'User-Agent' : USER_AGENT})
-        self._data = urllib2.urlopen(request)
-        self._size = int(self.data.info().getheader('Content-Length'))
+        self._data = None
+        self._size = None
        
     @property
     def data(self):
         '''
         A file-like object containing song's raw data.
         '''
+        if self._data is None:
+            self._data = urllib2.urlopen(self._request)
         return self._data
     
     @property
@@ -133,7 +136,15 @@ class Stream(object):
         '''
         Size of the song's raw data in bytes.
         '''
+        if self._size is None:
+            self._size = int(self.data.info().getheader('Content-Length'))
         return self._size
+
+    @property
+    def url(self):
+        '''
+        '''
+        return self._request.get_full_url() + '?streamKey=' + quote_plus(self._key)
 
 class Album(object):
     '''
